@@ -55,8 +55,9 @@ func Signup() gin.HandlerFunc {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"errror": "error occured while checking for the email"})
 		}
-
-		count, err = userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
+		password := HashPassword(*user.Password)
+		user.Password = &password
+		count, err := userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 		defer cancel()
 		if err != nil {
 			log.Panic(err)
@@ -85,6 +86,15 @@ func Signup() gin.HandlerFunc {
 
 	}
 }
+
+func HashPassword(password string) string {
+	bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Panic(err)
+	}
+	return string(bytes)
+}
+
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -104,10 +114,17 @@ func Login() gin.HandlerFunc {
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
 		defer cancel()
 
-	}
-}
-func HashPassword() {
+		if passwordIsValid != true {
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+			return
+		}
 
+		if foundUser.Email == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user not found"})
+		}
+		token, refreshToken, _ := helpers.GenerateAllTokens(*foundUser.Email, *foundUser.First_name, *foundUser.Last_name, *foundUser.User_type, *&foundUser.User_id)
+
+	}
 }
 
 func GetUsers() {

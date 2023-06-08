@@ -2,6 +2,9 @@ package helpers
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"os"
@@ -25,6 +28,7 @@ type SignedDetails struct {
 }
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
+
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
 func GenerateAllTokens(email string, firstName string, lastName string, userType string, uid string) (signedToken string, signedRefreshToken string, err error) {
@@ -43,13 +47,33 @@ func GenerateAllTokens(email string, firstName string, lastName string, userType
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(168)).Unix(),
 		},
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodES256, claims).SignedString([]byte(SECRET_KEY))
-	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodES256, refreshClaims).SignedString([]byte(SECRET_KEY))
-
+	// secretKey := []byte(SECRET_KEY)
+	// token, err := jwt.NewWithClaims(jwt.SigningMethodES256, claims).SignedString(secretKey)
+	// refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodES256, refreshClaims).SignedString(secretKey)
+	// Generate the elliptic curve private key
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		log.Panic(err)
-		return
+		return "", "", err
 	}
+
+	// Sign the tokens using the private key
+	token, err := jwt.NewWithClaims(jwt.SigningMethodES256, claims).SignedString(privateKey)
+	if err != nil {
+		log.Panic(err)
+		return "", "", err
+	}
+
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodES256, refreshClaims).SignedString(privateKey)
+	if err != nil {
+		log.Panic(err)
+		return "", "", err
+	}
+
+	// if err != nil {
+	// 	log.Panic(err)
+	// 	return
+	// }
 	return token, refreshToken, err
 }
 
@@ -93,7 +117,9 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 		signedToken,
 		&SignedDetails{},
 		func(token *jwt.Token) (interface{}, error) {
-			return []byte(SECRET_KEY), nil
+			// Replace "SECRET_KEY" with your actual secret key value or retrieve it from the environment
+			secretKey := []byte("SECRET_KEY")
+			return secretKey, nil
 		},
 	)
 

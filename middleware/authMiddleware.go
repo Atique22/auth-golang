@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/atique/auth-golang/helpers"
@@ -12,7 +11,8 @@ func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientToken := c.Request.Header.Get("token")
 		if clientToken == "" {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Printf("No authorization provider")})
+			errorMessage := "No authorization provider"
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorMessage})
 			c.Abort()
 			return
 		}
@@ -28,4 +28,5 @@ func Authenticate() gin.HandlerFunc {
 		c.Set("uid", claims.Uid)
 		c.Set("user_type", claims.User_type)
 		c.Next()
+	}
 }

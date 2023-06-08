@@ -47,3 +47,7 @@ func GenerateAllTokens(email string, firstName string, lastName string, userType
 	}
 	return token, refreshToken, err
 }
+
+func UpdateAllTokens(signedToken string, signedRefreshToken string, userId string) {
+
+}

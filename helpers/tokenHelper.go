@@ -22,7 +22,7 @@ type SignedDetails struct {
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
-func GenerateAllTokens(email string, firstName string, lastName string, userType string, uid string) (signedToken string, signedRefreshToken string) {
+func GenerateAllTokens(email string, firstName string, lastName string, userType string, uid string) (signedToken string, signedRefreshToken string, err error) {
 	claims := &SignedDetails{
 		Email:      email,
 		First_name: firstName,
